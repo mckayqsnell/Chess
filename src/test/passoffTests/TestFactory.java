@@ -10,29 +10,54 @@ public class TestFactory {
 
     //Chess Functions
     //------------------------------------------------------------------------------------------------------------------
-    public static ChessBoard getNewBoard(){
-        // FIXME
-		return null;
+    public static ChessBoard getNewBoard()
+    {
+		return new ChessBoardImpl();
     }
 
-    public static ChessGame getNewGame(){
-        // FIXME
-		return null;
+    public static ChessGame getNewGame()
+    {
+		return new ChessGameImpl();
     }
 
     public static ChessPiece getNewPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type){
-        // FIXME
+
+        if(type == ChessPiece.PieceType.PAWN)
+        {
+            return new PawnPiece(pieceColor);
+        }
+        if(type == ChessPiece.PieceType.ROOK)
+        {
+            return new RookPiece(pieceColor);
+        }
+        if(type == ChessPiece.PieceType.KNIGHT)
+        {
+            return new KnightPiece(pieceColor);
+        }
+        if(type == ChessPiece.PieceType.BISHOP)
+        {
+            return new BishopPiece(pieceColor);
+        }
+        if(type == ChessPiece.PieceType.QUEEN)
+        {
+            return new QueenPiece(pieceColor);
+        }
+        if(type == ChessPiece.PieceType.KING)
+        {
+            return new KingPiece(pieceColor);
+        }
+
 		return null;
     }
 
-    public static ChessPosition getNewPosition(Integer row, Integer col){
-        // FIXME
-		return null;
+    public static ChessPosition getNewPosition(Integer row, Integer col)
+    {
+		return new ChessPositionImpl(col, row);
     }
 
     public static ChessMove getNewMove(ChessPosition startPosition, ChessPosition endPosition, ChessPiece.PieceType promotionPiece){
-        // FIXME
-		return null;
+
+		return new ChessMoveImpl(startPosition, endPosition, promotionPiece);
     }
     //------------------------------------------------------------------------------------------------------------------
 

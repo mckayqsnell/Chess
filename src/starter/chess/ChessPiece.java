@@ -35,4 +35,10 @@ public interface ChessPiece {
      * @return Collection of valid moves
      */
     Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition);
+
+    //Additions from McKay
+
+    //This method just returns the corresponding char for the piece.
+    char getPieceChar();
+
 }

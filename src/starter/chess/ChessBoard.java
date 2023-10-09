@@ -1,5 +1,7 @@
 package chess;
 
+import java.util.Map;
+
 /**
  * A chessboard that can hold and rearrange chess pieces
  */
@@ -24,4 +26,10 @@ public interface ChessBoard {
      * (How the game of chess normally starts)
      */
     void resetBoard();
+
+    /* additions from McKay */
+    ChessPosition getPiecePosition(ChessPiece piece);
+    void setPieceAtPosition(ChessPosition position, ChessPiece piece);
+    Map<ChessPosition, ChessPiece> getBoard();
+    boolean isCaptureMove(ChessMove move);
 }
