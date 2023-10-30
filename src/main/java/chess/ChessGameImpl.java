@@ -48,7 +48,6 @@ public class ChessGameImpl implements ChessGame {
 
         return validMoves; //if this is empty it will return null
     }
-
     @Override
     public void makeMove(ChessMove move) throws InvalidMoveException//deleted throws exception here because I am handling it
     {
