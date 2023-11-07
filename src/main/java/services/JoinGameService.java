@@ -78,7 +78,7 @@ public class JoinGameService {
 
     private String findUsernameFromAuthToken(String authToken) throws DataAccessException {
         Set<AuthToken> authTokens = authDAO.findAllAuthTokens();
-        if (authTokens.isEmpty()) {
+        if (authTokens == null) {
             throw new DataAccessException("No users in the database!");
         }
         String username = "";

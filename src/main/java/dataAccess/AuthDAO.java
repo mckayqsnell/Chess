@@ -4,18 +4,15 @@ import models.AuthToken;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.sql.*;
 
-/**
- * AuthDAO that stores and manipulates the datastore for all authTokens
- * Supports CRUD operations
- */
 public class AuthDAO {
     private static AuthDAO instance;
-    private final Set<AuthToken> authTokens;
+    private final Database database;
 
+    // Private constructor to prevent external instantiation
     private AuthDAO() {
-        // Private constructor to prevent external instantiation
-        authTokens = new HashSet<>();
+        database = new Database();
     }
 
     public static AuthDAO getInstance() {
@@ -26,32 +23,92 @@ public class AuthDAO {
     }
 
     public void createAuthToken(AuthToken authToken) throws DataAccessException {
-        authTokens.add(authToken);
+        var conn = database.getConnection();
+
+        String sql = "insert into authtokens (authtoken, username) values (?, ?)";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, authToken.getAuthToken());
+            stmt.setString(2, authToken.getUsername());
+            stmt.execute();
+
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     public AuthToken findAuthToken(String authToken) throws DataAccessException {
-        for (AuthToken token : authTokens) {
-            if (token.getAuthToken().equals(authToken)) {
-                return token;
+        var conn = database.getConnection();
+        String sql = "select authtoken, username from authtokens where authtoken = ?";
+
+        AuthToken token = new AuthToken();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, authToken);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    token.setAuthToken(rs.getString(1));
+                    token.setUsername(rs.getString(2));
+                } else {
+                    return null;
+                }
+            } catch (SQLException e) {
+                throw new DataAccessException(e.getMessage());
             }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+
+        return token;
+    }
+
+    public Set<AuthToken> findAllAuthTokens() throws DataAccessException {
+        var conn = database.getConnection();
+        String sql = "select authtoken, username from authtokens";
+
+        Set<AuthToken> tokens = new HashSet<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String authToken = rs.getString(1);
+                String username = rs.getString(2);
+                tokens.add(new AuthToken(username, authToken));
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+
+        if (!tokens.isEmpty()) {
+            return tokens;
         }
         return null;
     }
 
-    public Set<AuthToken> findAllAuthTokens() throws DataAccessException {
-        if (authTokens.isEmpty()) {
-            throw new DataAccessException("No authTokens in the database!");
-        }
-        return authTokens;
-    }
-
     public void removeAuthToken(String authToken) throws DataAccessException {
-        authTokens.removeIf(authTokenObject -> authTokenObject.getAuthToken().equals(authToken));
+        var conn = database.getConnection();
+        String sql = "delete from authtokens where authtoken = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, authToken);
+            stmt.execute();
+
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     public void clearAllAuthTokens() throws DataAccessException {
-        if (!authTokens.isEmpty()) {
-            authTokens.clear();
+        var conn = database.getConnection();
+        String sql = "delete from authtokens";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.execute();
+
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
         }
     }
 }

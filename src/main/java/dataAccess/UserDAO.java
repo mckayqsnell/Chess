@@ -2,20 +2,15 @@ package dataAccess;
 
 import models.User;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.sql.*;
 
-/**
- * UserDAO that stores and manipulates the datastore for all users
- * Supports CRUD operations
- */
 public class UserDAO {
     private static UserDAO instance;
-    private final Set<User> users;
+    private final Database database;
 
+    // Private constructor to prevent external instantiation
     private UserDAO() {
-        // Private constructor to prevent external instantiation
-        users = new HashSet<>();
+        database = new Database();
     }
 
     public static UserDAO getInstance() {
@@ -26,34 +21,57 @@ public class UserDAO {
     }
 
     public void createUser(User user) throws DataAccessException {
-        for (User u : users) {
-            if (u.getUsername().equals(user.getUsername())) {
-                throw new DataAccessException("Error: already taken");
-            }
+        var conn = database.getConnection();
+
+        String sql = "insert into users (username, password, email) values (?, ?, ?)";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, user.getUsername());
+            stmt.setString(2, user.getPassword());
+            stmt.setString(3, user.getEmail());
+            stmt.execute();
+
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
         }
-        users.add(user);
     }
 
     public User findUser(String username) throws DataAccessException {
-        for (User user : users) {
-            if (user.getUsername().equals(username)) {
-                return user; //should be safe since I'm using a set
+        var conn = database.getConnection();
+        String sql = "select username, password, email from users where username = ?";
+
+        User user = new User();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    user.setUsername(rs.getString(1));
+                    user.setPassword(rs.getString(2));
+                    user.setEmail(rs.getString(3));
+                } else {
+                    return null;
+                }
+            } catch (SQLException e) {
+                throw new DataAccessException(e.getMessage());
             }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
         }
-        return null; //FIXME: TEMP RETURN NULL, not sure If should return null if not found or not, might need to throw
-    }
 
-    /* Guessing this will be needed later on */
-    public void updateUser(String username) throws DataAccessException {
-    }
-
-    /* Guessing this will be needed later on */
-    public void removeUser(String username) throws DataAccessException {
+        return user;
     }
 
     public void clearAllUsers() throws DataAccessException {
-        if (!users.isEmpty()) {
-            users.clear();
+        var conn = database.getConnection();
+        String sql = "delete from users";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.execute();
+
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
         }
     }
 }

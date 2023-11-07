@@ -8,8 +8,6 @@ import requests.RegisterRequest;
 import responses.*;
 import services.*;
 
-import java.util.ArrayList;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ServiceTests {
@@ -24,6 +22,12 @@ public class ServiceTests {
 
     @BeforeEach
     public void setup() {
+        clearApplicationService = new ClearApplicationService();
+        clearApplicationService.clearApplication();
+    }
+
+    @AfterEach
+    public void cleanup() {
         clearApplicationService = new ClearApplicationService();
         clearApplicationService.clearApplication();
     }
@@ -74,7 +78,7 @@ public class ServiceTests {
         RegisterRequest registerRequest = new RegisterRequest("mckaysnell", "password", "snell10@byu.edu");
         RegisterRequest registerRequest2 = new RegisterRequest("mckaysnell", "llskdjf", "lsdkjf");
         registerService = new RegisterService();
-        RegisterResponse response = registerService.register(registerRequest);
+        registerService.register(registerRequest);
         RegisterResponse response2 = registerService.register(registerRequest2);
 
         assertNotNull(response2);
@@ -175,7 +179,7 @@ public class ServiceTests {
 
         LoginRequest loginRequest = new LoginRequest("user", "password");
         loginService = new LoginService();
-        LoginResponse response = loginService.login(loginRequest);
+        loginService.login(loginRequest);
 
         logoutService = new LogoutService();
         LogoutResponse logoutResponse = logoutService.logout("bad authtoken");
@@ -254,7 +258,7 @@ public class ServiceTests {
         //Login a user
         LoginRequest loginRequest = new LoginRequest("user", "password");
         loginService = new LoginService();
-        LoginResponse loginresponse = loginService.login(loginRequest);
+        loginService.login(loginRequest);
 
         //user attempts to create a game with a bad authToken
         CreateGameRequest createGameRequest = new CreateGameRequest("Gamename");
@@ -390,10 +394,10 @@ public class ServiceTests {
         //1
         CreateGameRequest createGameRequest = new CreateGameRequest("alone");
         createGameService = new CreateGameService();
-        CreateGameResponse game1 = createGameService.createGame(createGameRequest, response.getAuthToken());
+        createGameService.createGame(createGameRequest, response.getAuthToken());
         //2
         CreateGameRequest createGameRequest2 = new CreateGameRequest("another one");
-        CreateGameResponse game2 = createGameService.createGame(createGameRequest2, response.getAuthToken());
+        createGameService.createGame(createGameRequest2, response.getAuthToken());
 
         //Attempting to list games with a bad authToken
         listGamesService = new ListGamesService();
@@ -418,14 +422,14 @@ public class ServiceTests {
         //1
         CreateGameRequest createGameRequest = new CreateGameRequest("alone");
         createGameService = new CreateGameService();
-        CreateGameResponse game1 = createGameService.createGame(createGameRequest, response.getAuthToken());
+        createGameService.createGame(createGameRequest, response.getAuthToken());
         //2
         CreateGameRequest createGameRequest2 = new CreateGameRequest("another one");
-        CreateGameResponse game2 = createGameService.createGame(createGameRequest2, response.getAuthToken());
+        createGameService.createGame(createGameRequest2, response.getAuthToken());
 
         clearApplicationService = new ClearApplicationService();
         ClearApplicationResponse clearApplicationResponse = clearApplicationService.clearApplication();
 
-        assertNull(clearApplicationResponse.getMessage()); //should just be an empty response
+        assertNull(clearApplicationResponse.getMessage());//should just be an empty response
     }
 }
