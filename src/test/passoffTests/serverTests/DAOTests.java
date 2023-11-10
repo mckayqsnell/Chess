@@ -6,6 +6,7 @@ import dataAccess.DataAccessException;
 import dataAccess.GameDAO;
 import dataAccess.UserDAO;
 import models.AuthToken;
+import models.Game;
 import models.User;
 import org.junit.jupiter.api.*;
 
@@ -194,6 +195,14 @@ public class DAOTests {
         assertNull(test1);
         assertNull(test2);
         assertNull(test3);
+    }
+
+    @Test
+    @Order(13)
+    @DisplayName("Create Chess Game")
+    public void testCreateChessGame() {
+        Game game = new Game("testGame");
+        gameDAO.chessGameString(game.getGame());
     }
 
     //TODO: gameDAO

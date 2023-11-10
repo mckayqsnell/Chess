@@ -2,26 +2,18 @@ package chess;
 
 import java.util.Collection;
 
-public class RookPiece extends ChessPieceImpl{
+public class RookPiece extends ChessPieceImpl {
     public RookPiece(ChessGame.TeamColor teamColor) {
-        super(teamColor);
+        super(teamColor, PieceType.ROOK);
     }
 
     @Override
-    public PieceType getPieceType()
-    {
-        return PieceType.ROOK;
-    }
-
-    @Override
-    public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition)
-    {
+    public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         return rectilinearMoves(board, myPosition);
     }
 
     @Override
-    public char getPieceChar()
-    {
+    public char getPieceChar() {
         return 'r';
     }
 }

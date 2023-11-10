@@ -2,6 +2,7 @@ package models;
 
 import chess.ChessGame;
 import chess.ChessGameImpl;
+import chess.ChessPosition;
 
 import java.util.Random;
 
@@ -13,8 +14,11 @@ public class Game {
 
     private String whiteUsername;
     private String blackUsername;
-    private final String gameName;
-    private final ChessGame game;
+    private String gameName;
+    private ChessGameImpl game;
+
+    public Game() {
+    }
 
     public Game(String gameName) {
         this.gameName = gameName;
@@ -24,6 +28,10 @@ public class Game {
 
     public Integer getGameID() {
         return gameID;
+    }
+
+    public void setGameID(Integer gameID) {
+        this.gameID = gameID;
     }
 
     public String getWhiteUsername() {
@@ -46,10 +54,22 @@ public class Game {
         return gameName;
     }
 
+    public void setGameName(String gameName) {
+        this.gameName = gameName;
+    }
+
+    public ChessGameImpl getGame() {
+        return game;
+    }
+
     public void generateGameID() {
         Random random = new Random();
         int minGameID = 1000;
         int maxGameID = 10000;
         this.gameID = random.nextInt(maxGameID - minGameID) + minGameID;
+    }
+
+    public void setGame(ChessGameImpl game) {
+        this.game = game;
     }
 }
