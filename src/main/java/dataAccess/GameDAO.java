@@ -3,13 +3,9 @@ package dataAccess;
 import chess.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import com.google.gson.typeadapters.RuntimeTypeAdapterFactory;
 import models.Game;
 
-import java.io.IOException;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -22,11 +18,9 @@ import java.util.ArrayList;
 public class GameDAO {
     private static GameDAO instance;
     private final Database database;
-    private final ArrayList<Game> games;
 
     private GameDAO() {
         // Private constructor to prevent external instantiation
-        games = new ArrayList<>();
         database = new Database();
     }
 
@@ -56,54 +50,145 @@ public class GameDAO {
 
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
     }
 
     public Game findGame(Integer gameID) throws DataAccessException {
-        if (!games.isEmpty()) {
-            for (Game game : games) {
-                if (gameID.equals(game.getGameID())) {
-                    return game;
-                }
+        var conn = database.getConnection();
+        String sql = "select gameID, whiteUsername, blackUsername, gameName, ChessGame from games where gameID = ?";
+        Game game = new Game();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, gameID);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                game.setGameID(rs.getInt(1));
+                game.setWhiteUsername(rs.getString(2));
+                game.setBlackUsername(rs.getString(3));
+                game.setGameName(rs.getString(4));
+                String gameString = rs.getString(5);
+
+                GsonBuilder builder = new GsonBuilder() //FIXME: Separate into another method
+                        .enableComplexMapKeySerialization()
+                        .registerTypeAdapter(ChessBoard.class, new ChessBoardAdapter());
+                Gson gson = builder.create();
+                game.setGame(gson.fromJson(gameString, ChessGameImpl.class));
+            } else {
+                return null;
             }
-        } else {
-            throw new DataAccessException("Error: bad request");
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
-        return null;
+
+        return game;
     }
 
     public ArrayList<Game> findAll() throws DataAccessException {
+        var conn = database.getConnection();
+        String sql = "select gameID, whiteUsername, blackUsername, gameName, ChessGame from games";
+
+        ArrayList<Game> games = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Integer gameID = rs.getInt(1);
+                String whiteUsername = rs.getString(2);
+                String blackUsername = rs.getString(3);
+                String gameName = rs.getString(4);
+                String gameString = rs.getString(5);
+
+                GsonBuilder builder = new GsonBuilder() //FIXME: Separate into a method
+                        .enableComplexMapKeySerialization()
+                        .registerTypeAdapter(ChessBoard.class, new ChessBoardAdapter());
+                Gson gson = builder.create();
+                ChessGameImpl game = gson.fromJson(gameString, ChessGameImpl.class);
+
+                games.add(new Game(gameID, whiteUsername, blackUsername, gameName, game));
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
+        }
+
         return games;
     }
 
     public void claimSpot(Integer gameID, String username, String team) throws DataAccessException {
         if (team.equals("WHITE")) {
-            for (Game game : games) {
-                if (gameID.equals(game.getGameID())) {
-                    if (game.getWhiteUsername() != null) {
-                        throw new DataAccessException("Error: already taken");
-                    }
-                    game.setWhiteUsername(username);
-                    return;
-                }
-            }
+            claimSpotForWhite(gameID, username);
         } else if (team.equals("BLACK")) {
-            for (Game game : games) {
-                if (gameID.equals(game.getGameID())) {
-                    if (game.getBlackUsername() != null) {
-                        throw new DataAccessException("Error: already taken");
-                    }
-                    game.setBlackUsername(username);
-                    return;
-                }
-            }
+            claimSpotForBlack(gameID, username);
         } else {
             throw new DataAccessException("Error: bad request");
         }
     }
 
+    private void claimSpotForWhite(Integer gameID, String username) throws DataAccessException {
+        var con = database.getConnection();
+        //check if the username is not null
+        String sql = "select whiteUsername from games where gameID = ?";
+        checkIfUsernameIsNull(gameID, con, sql);
+
+        //make the update knowing we checked if its null
+        sql = "update games " + "set whiteUsername = ? " + "where gameID = ? ";
+        executeUsernameUpdate(gameID, username, con, sql);
+    }
+
+    private void claimSpotForBlack(Integer gameID, String username) throws DataAccessException {
+        var con = database.getConnection();
+        //check if the username is not null
+        String sql = "select blackUsername from games where gameID = ?";
+        checkIfUsernameIsNull(gameID, con, sql);
+
+        //make the update knowing we checked if its null
+        sql = "update games " + "set blackUsername = ? " + "where gameID = ? ";
+        executeUsernameUpdate(gameID, username, con, sql);
+    }
+
+    private void checkIfUsernameIsNull(Integer gameID, Connection con, String sql) throws DataAccessException {
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setInt(1, gameID);
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                String blackUsername = rs.getString(1);
+                if (blackUsername != null) {
+                    database.closeConnection(con);
+                    throw new DataAccessException("Error: already taken");
+                }
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+    }
+
+    private void executeUsernameUpdate(Integer gameID, String username, Connection con, String sql) throws DataAccessException {
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setInt(2, gameID);
+            if (stmt.executeUpdate() == 1) {
+                System.out.println("Updated game" + gameID);
+            } else {
+                System.out.println("Failed to update game" + gameID);
+            }
+
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(con);
+        }
+    }
+
     /* Will be used later */
-    public void updateGame(Integer gameID) throws DataAccessException {
+    public void updateGame(Integer gameID) throws DataAccessException { //FIXME
         /*
         Query the game’s state (JSON string) from the database
         Deserialize the JSON string to a ChessGame Java object
@@ -130,13 +215,15 @@ public class GameDAO {
 
                     String gameString = rs.getString(5);
                     Gson gson = new Gson();
-                    ChessGameImpl chessGame = gson.fromJson(gameString, ChessGameImpl.class);
+                    ChessGameImpl chessGame = gson.fromJson(gameString, ChessGameImpl.class); //FIXME
                     game.setGame(chessGame);
                 }
             }
 
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(con);
         }
 
         //TODO: Update the game with the specified update (fix parameters) and then put it back into the database
@@ -146,7 +233,7 @@ public class GameDAO {
     }
 
     /* I'm guessing this will be needed later */
-    public void removeGame(Integer gameID) throws DataAccessException {
+    public void removeGame(Integer gameID) throws DataAccessException { //TODO
     }
 
     public void clearAllGames() throws DataAccessException {
@@ -158,23 +245,24 @@ public class GameDAO {
 
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
     }
 
-    public String chessGameString(ChessGameImpl chessGame) { //TODO: Make this a private method once its tested //DONT NEED TO TEST THIS
+    private String chessGameString(ChessGameImpl chessGame) { //TODO: Make this a private method once its tested //DONT NEED TO TEST THIS
         GsonBuilder builder = new GsonBuilder()
                 .enableComplexMapKeySerialization()
-                .setPrettyPrinting()
-                .registerTypeAdapter(ChessPosition.class, new ChessPositionAdapter())
-                .registerTypeAdapter(ChessPiece.class, new ChessPieceAdapter());
+                .registerTypeAdapter(ChessBoard.class, new ChessBoardAdapter());
         Gson gson = builder.create();
 
-        String jsonString = gson.toJson(chessGame);
-        System.out.println(jsonString);
+        //System.out.println(jsonString);
 
         //Try making a new ChessGame Object
-        ChessGameImpl testGame = gson.fromJson(jsonString, ChessGameImpl.class);
+        //ChessGameImpl testGame = gson.fromJson(jsonString, ChessGameImpl.class);
 
-        return ""; //FIXME: return the gson string once this is working.
+        //System.out.println(testGame.getBoard().toString());
+
+        return gson.toJson(chessGame);
     }
 }

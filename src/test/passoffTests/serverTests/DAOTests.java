@@ -10,6 +10,7 @@ import models.Game;
 import models.User;
 import org.junit.jupiter.api.*;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -24,12 +25,14 @@ public class DAOTests {
     public void setup() throws DataAccessException {
         authDAO.clearAllAuthTokens();
         userDAO.clearAllUsers();
-        //TODO: gameDAO.clear
+        gameDAO.clearAllGames();
     }
 
     @AfterEach
     public void cleanup() throws DataAccessException {
         authDAO.clearAllAuthTokens();
+        userDAO.clearAllUsers();
+        gameDAO.clearAllGames();
     }
 
     /* AuthDAO Tests */
@@ -199,11 +202,116 @@ public class DAOTests {
 
     @Test
     @Order(13)
-    @DisplayName("Create Chess Game")
-    public void testCreateChessGame() {
-        Game game = new Game("testGame");
-        gameDAO.chessGameString(game.getGame());
+    @DisplayName("Create Game")
+    public void testCreateChessGame() throws DataAccessException {
+        Game expected = new Game(1001, "whiteUsername", "blackUsername", "testGame");
+        gameDAO.createGame(expected);
+        Game actual = gameDAO.findGame(1001);
+
+        assertNotNull(actual);
+        assertEquals(expected, actual);
     }
 
-    //TODO: gameDAO
+    @Test
+    @Order(14)
+    @DisplayName("Bad Create Game, Duplicate Game")
+    public void testBadCreateGame() throws DataAccessException {
+        gameDAO.createGame(new Game(1001, "whiteUsername", "blackUsername", "testGame"));
+
+        assertThrows(DataAccessException.class, () -> gameDAO.createGame(new Game(1001, "whiteUsername", "blackUsername", "testGame")));
+    }
+
+    @Test
+    @Order(15)
+    @DisplayName("Find a game")
+    public void testFindGame() throws DataAccessException {
+        Game expected = new Game(1001, "whiteUsername", "blackUsername", "testGame");
+        gameDAO.createGame(expected);
+        Game actual = gameDAO.findGame(1001);
+
+        assertNotNull(actual);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    @Order(16)
+    @DisplayName("Game does not exist")
+    public void testBadFindGame() throws DataAccessException {
+        gameDAO.createGame(new Game(1001, "whiteUsername", "blackUsername", "testGame"));
+        gameDAO.createGame(new Game(1002, "whiteUsername", "blackUsername", "testGame2"));
+        gameDAO.createGame(new Game(1003, "whiteUsername", "blackUsername", "testGame3"));
+
+        //Try to find a game that does not exist
+        Game actual = gameDAO.findGame(2000);
+        assertNull(actual);
+    }
+
+    @Test
+    @Order(17)
+    @DisplayName("ClaimSpot")
+    public void testClaimSpot() throws DataAccessException {
+        gameDAO.createGame(new Game(1001, "testGame"));
+        gameDAO.claimSpot(1001, "testUser", "WHITE");
+
+        Game expected = new Game(1001, "testUser", null, "testGame");
+        Game actual = gameDAO.findGame(1001);
+
+        assertNotNull(actual);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    @Order(18)
+    @DisplayName("Bad ClaimSpot")
+    public void testBadClaimSpot() throws DataAccessException {
+        gameDAO.createGame(new Game(1001, "testGame"));
+        gameDAO.claimSpot(1001, "testUser", "WHITE");
+
+        //Try to claim that same spot in white that was already claimed
+        assertThrows(DataAccessException.class, () -> gameDAO.claimSpot(1001, "someOther", "WHITE"));
+    }
+
+    @Test
+    @Order(19)
+    @DisplayName("List all Games")
+    public void listAllGames() throws DataAccessException {
+        gameDAO.createGame(new Game(1001, "testGame"));
+        gameDAO.createGame(new Game(1002, "testGame2"));
+        gameDAO.createGame(new Game(1003, "testGame3"));
+
+        ArrayList<Game> expected = new ArrayList<>();
+        expected.add(new Game(1001, "testGame"));
+        expected.add(new Game(1002, "testGame2"));
+        expected.add(new Game(1003, "testGame3"));
+
+        ArrayList<Game> actual = gameDAO.findAll();
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    @Order(20)
+    @DisplayName("Bad List Games")
+    public void badListAllGames() throws DataAccessException {
+        //Make sure no games are returned if the database should be empty? Couldn't think of a negative case to test
+        ArrayList<Game> actual = gameDAO.findAll();
+        ArrayList<Game> expected = new ArrayList<>();
+        assertEquals(expected, actual); //Should return an empty arrayList
+    }
+
+    @Test
+    @Order(21)
+    @DisplayName("Clear all Games")
+    public void clearAllGames() throws DataAccessException {
+        gameDAO.createGame(new Game(1001, "testGame"));
+        gameDAO.createGame(new Game(1002, "testGame2"));
+        gameDAO.createGame(new Game(1003, "testGame3"));
+        gameDAO.clearAllGames();
+        ArrayList<Game> actual = gameDAO.findAll();
+        ArrayList<Game> expected = new ArrayList<>();
+
+        assertEquals(expected, actual);
+    }
+
+    //TODO: Remove Game and UpdateGame, not required for phase 4
 }

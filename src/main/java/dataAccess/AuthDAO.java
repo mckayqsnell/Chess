@@ -34,6 +34,8 @@ public class AuthDAO {
 
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
     }
 
@@ -58,6 +60,8 @@ public class AuthDAO {
             }
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
 
         return token;
@@ -79,6 +83,8 @@ public class AuthDAO {
             }
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
 
         if (!tokens.isEmpty()) {
@@ -97,6 +103,8 @@ public class AuthDAO {
 
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
     }
 
@@ -109,6 +117,8 @@ public class AuthDAO {
 
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
     }
 }

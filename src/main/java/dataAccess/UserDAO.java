@@ -33,6 +33,8 @@ public class UserDAO {
 
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
     }
 
@@ -58,6 +60,8 @@ public class UserDAO {
             }
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
 
         return user;
@@ -72,6 +76,8 @@ public class UserDAO {
 
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
+        } finally {
+            database.closeConnection(conn);
         }
     }
 }

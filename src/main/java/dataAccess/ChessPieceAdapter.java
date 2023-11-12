@@ -2,7 +2,6 @@ package dataAccess;
 
 import chess.*;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
@@ -14,7 +13,7 @@ public class ChessPieceAdapter extends TypeAdapter<ChessPiece> {
     public void write(JsonWriter jsonWriter, ChessPiece piece) throws IOException {
         //jsonWriter.value(jsonWriter.toString());
         Gson gson = new Gson();
-        System.out.println("Im in the ChessPieceAdapter, and I've got a " + piece.getPieceType() + "type");
+        //System.out.println("Im in the ChessPieceAdapter, and I've got a " + piece.getPieceType() + "type");
 
         switch (piece.getPieceType()) {
             case BISHOP -> gson.getAdapter(BishopPiece.class).write(jsonWriter, (BishopPiece) piece);

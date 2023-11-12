@@ -1,5 +1,10 @@
 package chess;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import dataAccess.ChessPieceAdapter;
+import dataAccess.ChessPositionAdapter;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -7,31 +12,31 @@ public class ChessBoardImpl implements ChessBoard {
     //This class stores all the unCaptured pieces in a Game.
     // It needs to support adding and removing pieces for testing, as well as a resetBoard() method that sets the standard Chess starting configuration.
 
-    private final Map<ChessPosition, ChessPiece> board; //So that if there is no piece at a specified position it returns null
+    private final Map<ChessPosition, ChessPiece> boardMap; //So that if there is no piece at a specified position it returns null
 
     public ChessBoardImpl() {
-        board = new HashMap<>();
+        boardMap = new HashMap<>();
     }
 
     @Override
     public Map<ChessPosition, ChessPiece> getBoard() {
-        return board;
+        return boardMap;
     }
 
     @Override
     public void addPiece(ChessPosition position, ChessPiece piece) {
         //Might need to double-check that they don't add too many pieces?
-        board.put(position, piece);
+        boardMap.put(position, piece);
     }
 
     @Override
     public ChessPiece getPiece(ChessPosition position) {
-        return board.get(position); //this could return null so that's an easy indicator if a chessPiece is present at that position or not
+        return boardMap.get(position); //this could return null so that's an easy indicator if a chessPiece is present at that position or not
         //use this when determining capturing or not
     }
 
     public ChessPosition getPiecePosition(ChessPiece piece) {
-        for (Map.Entry<ChessPosition, ChessPiece> entry : board.entrySet()) {
+        for (Map.Entry<ChessPosition, ChessPiece> entry : boardMap.entrySet()) {
             if (entry.getValue() == piece) {
                 return entry.getKey();
             }
@@ -40,7 +45,7 @@ public class ChessBoardImpl implements ChessBoard {
     }
 
     public void setPieceAtPosition(ChessPosition position, ChessPiece piece) {
-        board.put(position, piece);
+        boardMap.put(position, piece);
     }
 
     public boolean isCaptureMove(ChessMove move) {
@@ -51,7 +56,7 @@ public class ChessBoardImpl implements ChessBoard {
     @Override
     public void resetBoard() //Clear and set chessboard to standard start.
     {
-        board.clear(); //empty the board
+        boardMap.clear(); //empty the board
 
         //Now that the board is empty, initialize add all the pieces to their standard positions
 
@@ -102,6 +107,17 @@ public class ChessBoardImpl implements ChessBoard {
 
     @Override
     public String toString() {
+        GsonBuilder builder = new GsonBuilder();
+        builder.enableComplexMapKeySerialization();
+        builder.registerTypeAdapter(ChessPosition.class, new ChessPositionAdapter());
+        builder.registerTypeAdapter(ChessPiece.class, new ChessPieceAdapter());
+
+        Gson gson = builder.create();
+        return gson.toJson(this);
+    }
+
+    /*@Override
+    public String toString() {
         StringBuilder builder = new StringBuilder();
         for (int row = 8; row >= 1; row--) //iterate over each row starting from row 8
         {
@@ -121,5 +137,5 @@ public class ChessBoardImpl implements ChessBoard {
             builder.append("\n");
         }
         return builder.toString();
-    }
+    } */
 }

@@ -1,20 +1,28 @@
 package responses;
 
-import java.util.ArrayList;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * the response to a  listGamesRequest
  */
 public class ListGamesResponse extends ResponseParent {
-    private final ArrayList<GameInfo> games;
+    private final Set<GameInfo> games;
 
     public ListGamesResponse() {
-        games = new ArrayList<>();
+        games = new HashSet<>();
     }
 
     public void addGame(int gameID, String gameName, String whiteUsername, String blackUsername) {
         games.add(new GameInfo(gameID, gameName, whiteUsername, blackUsername));
+    }
+
+    public Set<GameInfo> getGames() {
+        return games;
     }
 
     /*This is just for ServiceTests */
@@ -26,6 +34,19 @@ public class ListGamesResponse extends ResponseParent {
         }
         ListGamesResponse that = (ListGamesResponse) obj;
         return Objects.equals(games, that.games);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.games);
+    }
+
+    @Override
+    public String toString() {
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.setPrettyPrinting();
+        Gson gson = gsonBuilder.create();
+        return gson.toJson(games);
     }
 
     public static class GameInfo {
@@ -54,6 +75,11 @@ public class ListGamesResponse extends ResponseParent {
                     Objects.equals(whiteUsername, gameInfo.whiteUsername) &&
                     Objects.equals(blackUsername, gameInfo.blackUsername) &&
                     Objects.equals(gameName, gameInfo.gameName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(gameID, whiteUsername, blackUsername, gameName);
         }
     }
 }

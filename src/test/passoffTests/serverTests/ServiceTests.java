@@ -374,8 +374,9 @@ public class ServiceTests {
         listGamesService = new ListGamesService();
         ListGamesResponse actualResponse = listGamesService.listGames(user1.getAuthToken());
 
-        System.out.println(actualResponse);
-
+        System.out.println("actual response");
+        System.out.println(actualResponse.toString());
+        System.out.println("expected Response");
         System.out.println(expectedResponse);
 
         assertEquals(expectedResponse, actualResponse);
