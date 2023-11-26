@@ -81,5 +81,21 @@ public class ListGamesResponse extends ResponseParent {
         public int hashCode() {
             return Objects.hash(gameID, whiteUsername, blackUsername, gameName);
         }
+
+        public Integer getGameID() {
+            return gameID;
+        }
+
+        public String getWhiteUsername() {
+            return whiteUsername;
+        }
+
+        public String getBlackUsername() {
+            return blackUsername;
+        }
+
+        public String getGameName() {
+            return gameName;
+        }
     }
 }

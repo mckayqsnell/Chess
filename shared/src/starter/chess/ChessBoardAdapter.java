@@ -1,9 +1,5 @@
-package dataAccess;
+package chess;
 
-import chess.ChessBoard;
-import chess.ChessBoardImpl;
-import chess.ChessPiece;
-import chess.ChessPosition;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;

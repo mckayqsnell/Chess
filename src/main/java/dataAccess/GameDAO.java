@@ -215,7 +215,9 @@ public class GameDAO {
 
                     String gameString = rs.getString(5);
                     Gson gson = new Gson();
-                    ChessGameImpl chessGame = gson.fromJson(gameString, ChessGameImpl.class); //FIXME
+                    ChessGameImpl chessGame = gson.fromJson(gameString, ChessGameImpl.class);
+                    //TODO: Make the move that the user gave you. Then deserialize the game and store in the game object
+                    //TODO: Then update the game
                     game.setGame(chessGame);
                 }
             }
@@ -230,6 +232,10 @@ public class GameDAO {
         //Update the state of the ChessGame object
         //Re-serialize the Chess game to a JSON string
         //Update the game’s JSON string in the database
+    }
+
+    private void makeMoveInChessGame() { //TODO: Figure out how to make the move.The user should be giving me a move
+
     }
 
     /* I'm guessing this will be needed later */
@@ -250,7 +256,7 @@ public class GameDAO {
         }
     }
 
-    private String chessGameString(ChessGameImpl chessGame) { //TODO: Make this a private method once its tested //DONT NEED TO TEST THIS
+    private String chessGameString(ChessGameImpl chessGame) {
         GsonBuilder builder = new GsonBuilder()
                 .enableComplexMapKeySerialization()
                 .registerTypeAdapter(ChessBoard.class, new ChessBoardAdapter());

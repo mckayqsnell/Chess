@@ -2,8 +2,6 @@ package chess;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import dataAccess.ChessPieceAdapter;
-import dataAccess.ChessPositionAdapter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -115,27 +113,4 @@ public class ChessBoardImpl implements ChessBoard {
         Gson gson = builder.create();
         return gson.toJson(this);
     }
-
-    /*@Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        for (int row = 8; row >= 1; row--) //iterate over each row starting from row 8
-        {
-            builder.append("|");
-            for (int col = 1; col <= 8; col++) //iterate over each column within a row starting from column 1
-            {
-                ChessPosition position = new ChessPositionImpl(col, row);
-                ChessPiece piece = board.get(position);
-
-                if (piece == null) //Check to see if there is a piece at that position or not
-                {
-                    builder.append(" |");
-                } else {
-                    builder.append(piece.getPieceChar()).append("|");
-                }
-            }
-            builder.append("\n");
-        }
-        return builder.toString();
-    } */
 }

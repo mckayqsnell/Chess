@@ -28,8 +28,8 @@ public class ServiceTests {
 
     @AfterEach
     public void cleanup() {
-        clearApplicationService = new ClearApplicationService();
-        clearApplicationService.clearApplication();
+        //clearApplicationService = new ClearApplicationService();
+        //clearApplicationService.clearApplication();
     }
 
     @Test
