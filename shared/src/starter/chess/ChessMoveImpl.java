@@ -7,10 +7,9 @@ public class ChessMoveImpl implements ChessMove {
     private ChessPosition endPosition;
     private ChessPiece.PieceType promotionPiece;
 
-    public ChessMoveImpl()
-    {
-        //TODO: Not sure what to put here. Dr.Wilkerson said we need no argument constructors for JSON SERIALIZATION
+    public ChessMoveImpl() {
     }
+
     public ChessMoveImpl(ChessPosition start, ChessPosition end) //For all pieces that aren't pawns
     {
         this.startPosition = start;
@@ -23,27 +22,24 @@ public class ChessMoveImpl implements ChessMove {
         this.endPosition = end;
         this.promotionPiece = promotionPiece;
     }
+
     @Override
-    public ChessPosition getStartPosition()
-    {
+    public ChessPosition getStartPosition() {
         return startPosition;
     }
 
     @Override
-    public ChessPosition getEndPosition()
-    {
+    public ChessPosition getEndPosition() {
         return endPosition;
     }
 
     @Override
-    public ChessPiece.PieceType getPromotionPiece()
-    {
+    public ChessPiece.PieceType getPromotionPiece() {
         return promotionPiece;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return String.format("%s -> %s", startPosition.toString(), endPosition.toString());
     }
 
@@ -53,10 +49,9 @@ public class ChessMoveImpl implements ChessMove {
     }
 
     @Override
-    public boolean equals(Object obj)
-    {
-        if(this == obj) return true;
-        if(obj == null || this.getClass() != obj.getClass()) return false;
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
 
         ChessMoveImpl mov = (ChessMoveImpl) obj;
 
