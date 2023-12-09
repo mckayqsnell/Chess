@@ -114,12 +114,12 @@ public class ServerFacadeTests {
         CreateGameResponse createGameResponse = ServerFacade.createGameRequest(url, registerResponse.getAuthToken(), "TestGame");
 
         assertNotNull(createGameResponse);
-        assert createGameResponse.getGameID() >= 1000;
+        assertTrue(createGameResponse.getGameID() >= 1000);
     }
 
     @Test
     @Order(9)
-    @DisplayName("Bad Create GAme")
+    @DisplayName("Bad Create Game")
     public void badCreateGame() throws IOException {
         //TODO
         //Try creating a game with missing gameName
@@ -230,7 +230,7 @@ public class ServerFacadeTests {
         assertNull(joinGameResponse2);
 
         //Try an unauthorized Join Game
-        JoinGameResponse joinGameResponse3 = ServerFacade.joinGameRequest(url, "BAD AUTHTOKEN", response.getGameID(), "WHITE");
+        JoinGameResponse joinGameResponse3 = ServerFacade.joinGameRequest(url, "BAD AUTH TOKEN", response.getGameID(), "WHITE");
         assertNull(joinGameResponse3);
     }
 }

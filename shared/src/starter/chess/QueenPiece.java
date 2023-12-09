@@ -17,7 +17,7 @@ public class QueenPiece extends ChessPieceImpl {
     }
 
     @Override
-    public char getPieceChar() {
-        return 'q';
+    public String getPieceChar() {
+        return "q";
     }
 }

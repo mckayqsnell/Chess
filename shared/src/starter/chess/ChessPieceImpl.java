@@ -33,7 +33,7 @@ public abstract class ChessPieceImpl implements ChessPiece { //abstract means yo
     public abstract Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition); //For each of the subclasses to implement
     //Each piece will return its corresponding letter(for toString in Board)
 
-    public abstract char getPieceChar();
+    public abstract String getPieceChar();
 
 
     /* Additional helper methods to be inherited */

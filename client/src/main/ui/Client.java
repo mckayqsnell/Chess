@@ -1,15 +1,17 @@
 package ui;
 
-import chess.ChessBoard;
-import chess.ChessBoardImpl;
+import chess.ChessGame;
+import chess.ChessGameImpl;
 import responses.*;
 import serverFacade.ServerFacade;
+import webSocket.WSClient;
 
 import java.util.*;
 
 public class Client {
 
     private static String authToken;
+    private static Integer gameIdToJoin;
 
     private static Map<Integer, ListGamesResponse.GameInfo> games;
 
@@ -159,15 +161,30 @@ public class Client {
                 }
             } else if (input.equalsIgnoreCase("join")) {
                 if (joinGame(scanner, url, false)) {
-                    //FIXME: Change this to print from the actual board from the game specified
-                    ChessBoard board = new ChessBoardImpl();
-                    DrawBoard.drawBoard(board.getBoard());
+                    //FIXME: Send this to some sort of Gameplay Mode
+                    try {
+                        var ws = new WSClient(url);
+                        GamePlay.playGame(ws, authToken, gameIdToJoin);
+                    } catch (Exception e) {
+                        System.out.println("EXCEPTION THROWN: WEBSOCKET CONNECTION FAILED IN JOIN");
+                        System.out.println(e.getMessage());
+                    }
+
+                    /*ChessGame game = new ChessGameImpl();
+                    DrawBoard.drawChessboard(game.getBoard().getBoard(), ChessGame.TeamColor.WHITE);
+                    System.out.println(EscapeSequences.SET_BG_COLOR_BLACK);
+                    DrawBoard.drawChessboard(game.getBoard().getBoard(), ChessGame.TeamColor.BLACK); */
                 }
             } else if (input.equalsIgnoreCase("observe")) {
                 if (joinGame(scanner, url, true)) {
-                    //FIXME: Change this to print from the actual board from the game specified
-                    ChessBoard board = new ChessBoardImpl();
-                    DrawBoard.drawBoard(board.getBoard());
+                    //FIXME: Send this to some sort of Observe Mode.
+                    // They should only be able to see the board as it gets updated? and be able to quit and see legalMoves
+
+
+                    /*ChessGame game = new ChessGameImpl();
+                    DrawBoard.drawChessboard(game.getBoard().getBoard(), ChessGame.TeamColor.WHITE);
+                    System.out.println(EscapeSequences.SET_BG_COLOR_BLACK);
+                    DrawBoard.drawChessboard(game.getBoard().getBoard(), ChessGame.TeamColor.BLACK); */
                 }
             } else if (input.equalsIgnoreCase("logout")) {
                 if (logout(scanner, url, authToken)) {
@@ -206,7 +223,7 @@ public class Client {
             CreateGameResponse createGameResponse = ServerFacade.createGameRequest(url, authToken, gameName);
             if (createGameResponse != null) {
                 successful = true;
-                System.out.println("Game " + "\"" + gameName + "\"" + " created with gameID: " + createGameResponse.getGameID());
+                System.out.println("Game " + "\"" + gameName + "\"" + " created.");
             }
         } catch (Exception e) {
             System.out.println("CREATE GAME THREW AN EXCEPTION");
@@ -231,8 +248,8 @@ public class Client {
         while (badInput) {
             System.out.print("game number: ");
             gameNumber = scanner.nextInt();
+            scanner.nextLine();
             if (!observe) {
-                scanner.nextLine();
                 System.out.print("player color: ");
                 playerColor = scanner.nextLine();
             }
@@ -258,10 +275,10 @@ public class Client {
         }
 
         //Now that I know the game exists I can grab its ID.
-        int gameID = games.get(gameNumber).getGameID();
+        gameIdToJoin = games.get(gameNumber).getGameID();
 
         try {
-            JoinGameResponse joinGameResponse = ServerFacade.joinGameRequest(url, authToken, gameID, playerColor);
+            JoinGameResponse joinGameResponse = ServerFacade.joinGameRequest(url, authToken, gameIdToJoin, playerColor);
             if (joinGameResponse != null) {
                 successful = true;
                 System.out.println("Joining game: " + gameNumber + " - " + games.get(gameNumber).getGameName());

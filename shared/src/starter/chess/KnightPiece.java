@@ -66,7 +66,7 @@ public class KnightPiece extends ChessPieceImpl {
     }
 
     @Override
-    public char getPieceChar() {
-        return 'n'; //using n for knight because of the king
+    public String getPieceChar() {
+        return "n"; //using n for knight because of the king
     }
 }

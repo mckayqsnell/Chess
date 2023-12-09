@@ -13,7 +13,7 @@ public class BishopPiece extends ChessPieceImpl {
     }
 
     @Override
-    public char getPieceChar() {
-        return 'b';
+    public String getPieceChar() {
+        return "b";
     }
 }
