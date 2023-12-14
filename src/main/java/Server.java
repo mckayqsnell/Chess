@@ -3,6 +3,7 @@ import spark.Spark;
 import spark.Request;
 import spark.Response;
 import com.google.gson.Gson;
+import handlers.WebSocketHandler;
 
 import java.util.Map;
 
@@ -13,6 +14,8 @@ public class Server {
 
     private void run() {
         Spark.port(8080);
+        //WebSocket for gamePlay
+        Spark.webSocket("/connect", new WebSocketHandler());
 
         // Register a directory for hosting static files
         Spark.staticFiles.location("/public");
@@ -24,6 +27,7 @@ public class Server {
     }
 
     private void createRoutes() {
+
         //Register a user
         Spark.post("/user", (req, res) -> new RegisterHandler().handleRequest(req, res));
 

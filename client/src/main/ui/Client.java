@@ -1,15 +1,20 @@
 package ui;
 
-import chess.ChessBoard;
-import chess.ChessBoardImpl;
+import chess.ChessGame;
 import responses.*;
 import serverFacade.ServerFacade;
+import webSocket.ResponseHandler;
+import webSocket.WSClient;
+
+import static ui.EscapeSequences.*;
 
 import java.util.*;
 
 public class Client {
 
     private static String authToken;
+    private static Integer gameIdToJoin;
+    private static ChessGame.TeamColor currentPlayerColor = null; //Default
 
     private static Map<Integer, ListGamesResponse.GameInfo> games;
 
@@ -29,7 +34,7 @@ public class Client {
         String input = "nothing";
         while (!input.equalsIgnoreCase("quit")) {
 
-            System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+            System.out.print(SET_TEXT_COLOR_WHITE);
             System.out.print("[LOGGED_OUT]: ");
             input = scanner.nextLine();
 
@@ -138,8 +143,9 @@ public class Client {
     private static void loggedInMenu(Scanner scanner, String url) {
         String input = "";
         while (!input.equalsIgnoreCase("quit")) {
-            System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+            System.out.print(EscapeSequences.SET_TEXT_COLOR_BLUE);
             System.out.print("[LOGGED_IN]: ");
+            System.out.print(SET_TEXT_COLOR_WHITE);
             input = scanner.nextLine();
 
             if (input.equalsIgnoreCase("help")) {
@@ -159,18 +165,27 @@ public class Client {
                 }
             } else if (input.equalsIgnoreCase("join")) {
                 if (joinGame(scanner, url, false)) {
-                    //FIXME: Change this to print from the actual board from the game specified
-                    ChessBoard board = new ChessBoardImpl();
-                    DrawBoard.drawBoard(board.getBoard());
+                    try {
+                        var ws = new WSClient(url, new ResponseHandler(currentPlayerColor));
+                        GamePlay.playGame(ws, authToken, gameIdToJoin, currentPlayerColor);
+                    } catch (Exception e) {
+                        System.out.println("EXCEPTION THROWN: WEBSOCKET CONNECTION FAILED IN JOIN IN LOGIN_MENU");
+                        System.out.println(e.getMessage());
+                    }
                 }
             } else if (input.equalsIgnoreCase("observe")) {
                 if (joinGame(scanner, url, true)) {
-                    //FIXME: Change this to print from the actual board from the game specified
-                    ChessBoard board = new ChessBoardImpl();
-                    DrawBoard.drawBoard(board.getBoard());
+                    try {
+                        var ws = new WSClient(url, new ResponseHandler(null));
+                        currentPlayerColor = null; //Set to observe
+                        GamePlay.playGame(ws, authToken, gameIdToJoin, currentPlayerColor);
+                    } catch (Exception e) {
+                        System.out.println("EXCEPTION THROWN: WEBSOCKET CONNECTION FAILED IN OBSERVE IN LOGIN_MENU");
+                        System.out.println(e.getMessage());
+                    }
                 }
             } else if (input.equalsIgnoreCase("logout")) {
-                if (logout(scanner, url, authToken)) {
+                if (logout(url, authToken)) {
                     return; //Takes user back to the startMenu
                 }
             } else if (input.equalsIgnoreCase("quit")) {
@@ -206,7 +221,7 @@ public class Client {
             CreateGameResponse createGameResponse = ServerFacade.createGameRequest(url, authToken, gameName);
             if (createGameResponse != null) {
                 successful = true;
-                System.out.println("Game " + "\"" + gameName + "\"" + " created with gameID: " + createGameResponse.getGameID());
+                System.out.println("Game " + "\"" + gameName + "\"" + " created.");
             }
         } catch (Exception e) {
             System.out.println("CREATE GAME THREW AN EXCEPTION");
@@ -225,22 +240,22 @@ public class Client {
 
         boolean badInput = true;
         int gameNumber = 0;
-        String playerColor = "";
+        String playerColorToSend = "";
         boolean successful = false;
 
         while (badInput) {
             System.out.print("game number: ");
             gameNumber = scanner.nextInt();
+            scanner.nextLine();
             if (!observe) {
-                scanner.nextLine();
                 System.out.print("player color: ");
-                playerColor = scanner.nextLine();
+                playerColorToSend = scanner.nextLine();
             }
 
             if (gameNumber > 0) {
                 badInput = false;
-            } else if (playerColor.equalsIgnoreCase("white")
-                    || playerColor.equalsIgnoreCase("black") || playerColor.isEmpty()) {
+            } else if (playerColorToSend.equalsIgnoreCase("white")
+                    || playerColorToSend.equalsIgnoreCase("black") || playerColorToSend.isEmpty()) {
                 badInput = false;
             } else if (games.containsKey(gameNumber)) { //Check the game map if that number exists
                 badInput = false;
@@ -249,19 +264,23 @@ public class Client {
             }
         }
 
-        if (playerColor.equalsIgnoreCase("white")) {
-            playerColor = "WHITE";
-        } else if (playerColor.equalsIgnoreCase("black")) {
-            playerColor = "BLACK";
+        //Not going to lie, was too lazy to fix the playerColor situation, but it works
+        if (playerColorToSend.equalsIgnoreCase("white")) {
+            currentPlayerColor = ChessGame.TeamColor.WHITE;
+            playerColorToSend = "WHITE";
+        } else if (playerColorToSend.equalsIgnoreCase("black")) {
+            currentPlayerColor = ChessGame.TeamColor.BLACK;
+            playerColorToSend = "BLACK";
         } else {
-            playerColor = "";
+            currentPlayerColor = null;
+            playerColorToSend = "";
         }
 
         //Now that I know the game exists I can grab its ID.
-        int gameID = games.get(gameNumber).getGameID();
+        gameIdToJoin = games.get(gameNumber).getGameID();
 
         try {
-            JoinGameResponse joinGameResponse = ServerFacade.joinGameRequest(url, authToken, gameID, playerColor);
+            JoinGameResponse joinGameResponse = ServerFacade.joinGameRequest(url, authToken, gameIdToJoin, playerColorToSend);
             if (joinGameResponse != null) {
                 successful = true;
                 System.out.println("Joining game: " + gameNumber + " - " + games.get(gameNumber).getGameName());
@@ -332,7 +351,7 @@ public class Client {
         return gamesMap;
     }
 
-    private static boolean logout(Scanner scanner, String url, String token) {
+    private static boolean logout(String url, String token) {
         if (authToken == null || !authToken.equals(token)) {
             System.out.println("ERROR: Unauthorized logout. Bad authToken");
             return false;
@@ -355,46 +374,50 @@ public class Client {
     }
 
     private static void printLoggedInCommands() {
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+        System.out.print(SET_TEXT_COLOR_WHITE);
         System.out.print("create");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
+        System.out.print(SET_TEXT_COLOR_MAGENTA);
         System.out.println(" - a game");
 
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+        System.out.print(SET_TEXT_COLOR_WHITE);
         System.out.print("list");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
+        System.out.print(SET_TEXT_COLOR_MAGENTA);
         System.out.println(" - games");
 
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+        System.out.print(SET_TEXT_COLOR_WHITE);
         System.out.print("join");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
+        System.out.print(SET_TEXT_COLOR_MAGENTA);
         System.out.println(" - a game");
 
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+        System.out.print(SET_TEXT_COLOR_WHITE);
         System.out.print("observe");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
+        System.out.print(SET_TEXT_COLOR_MAGENTA);
         System.out.println(" - a game");
 
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+        System.out.print(SET_TEXT_COLOR_WHITE);
         System.out.print("logout");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
+        System.out.print(SET_TEXT_COLOR_MAGENTA);
         System.out.println(" - when you are done");
 
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+        helpCommandDescriptionHighlights();
+    }
+
+    private static void helpCommandDescriptionHighlights() {
+        System.out.print(SET_TEXT_COLOR_WHITE);
         System.out.print("quit");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
+        System.out.print(SET_TEXT_COLOR_MAGENTA);
         System.out.println(" - playing chess");
 
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+        System.out.print(SET_TEXT_COLOR_WHITE);
         System.out.print("help");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
+        System.out.print(SET_TEXT_COLOR_MAGENTA);
         System.out.println(" - with possible commands");
     }
 
     private static void welcomeMessage() {
-        System.out.println(EscapeSequences.ERASE_SCREEN);
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_SEAFOAM);
-        System.out.print(EscapeSequences.SET_TEXT_BOLD);
+        System.out.println(ERASE_SCREEN);
+        System.out.print(SET_TEXT_COLOR_SEAFOAM);
+        System.out.print(SET_TEXT_BOLD);
         System.out.print("👑");
         System.out.print(" Welcome to Chess! Type help to get started. ");
         System.out.println("👑");
@@ -403,30 +426,22 @@ public class Client {
 
     private static void printStartCommands() {
 
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+        System.out.print(SET_TEXT_COLOR_WHITE);
         System.out.print("register");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
+        System.out.print(SET_TEXT_COLOR_MAGENTA);
         System.out.println(" - to create an account");
 
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+        System.out.print(SET_TEXT_COLOR_WHITE);
         System.out.print("login");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
+        System.out.print(SET_TEXT_COLOR_MAGENTA);
         System.out.println(" - to play chess");
 
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
-        System.out.print("quit");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
-        System.out.println(" - playing chess");
-
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
-        System.out.print("help");
-        System.out.print(EscapeSequences.SET_TEXT_COLOR_MAGENTA);
-        System.out.println(" - with possible commands");
+        helpCommandDescriptionHighlights();
         System.out.println();
     }
 
     private static void goodbyeMessage() {
-        System.out.println(EscapeSequences.SET_TEXT_COLOR_SEAFOAM);
+        System.out.println(SET_TEXT_COLOR_SEAFOAM);
         System.out.print("🚀");
         System.out.print(" So long and thanks for all the fish! ");
         System.out.println("🚀");

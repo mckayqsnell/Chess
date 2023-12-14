@@ -4,12 +4,22 @@ import java.util.*;
 
 public class ChessGameImpl implements ChessGame {
     private ChessBoard board;
-    private TeamColor turn;//set to either white or black depending on whose turn it is
+    private TeamColor turn;
+    private GameStatus gameStatus;
 
     public ChessGameImpl() {
         board = new ChessBoardImpl();
         board.resetBoard();
         this.turn = TeamColor.WHITE;
+        gameStatus = GameStatus.IN_PROGRESS;
+    }
+
+    public GameStatus getGameStatus() {
+        return gameStatus;
+    }
+
+    public void setGameStatus(GameStatus gameStatus) {
+        this.gameStatus = gameStatus;
     }
 
     @Override
@@ -50,9 +60,8 @@ public class ChessGameImpl implements ChessGame {
     }
 
     @Override
-    public void makeMove(ChessMove move) throws InvalidMoveException//deleted throws exception here because I am handling it
-    {
-        //see if the move they want to make is within the set returned from validMoves based on the piece/postion
+    public void makeMove(ChessMove move) throws InvalidMoveException {
+        //see if the move they want to make is within the set returned from validMoves based on the piece/position
         Collection<ChessMove> validMoves = validMoves(move.getStartPosition());
         boolean isValidMove = false;
         for (ChessMove validMove : validMoves) {
@@ -79,7 +88,7 @@ public class ChessGameImpl implements ChessGame {
             if (move.getPromotionPiece() != null) {
                 changeToPromotionPiece(move.getEndPosition(), move.getPromotionPiece(), board.getPiece(move.getEndPosition()).getTeamColor());
             }
-            //set the previous position to null
+            //remove that piece from the map
             board.setPieceAtPosition(move.getStartPosition(), null);
 
         } else {
@@ -117,10 +126,18 @@ public class ChessGameImpl implements ChessGame {
 
             for (ChessMove move : moves) {
                 if (move.getEndPosition().equals(kingPosition)) {
+                    if (teamColor.equals(TeamColor.BLACK)) {
+                        setGameStatus(GameStatus.BLACK_IN_CHECK);
+                    } else {
+                        setGameStatus(GameStatus.WHITE_IN_CHECK);
+                    }
+
                     return true; //The King is in Check
                 }
             }
         }
+
+        setGameStatus(GameStatus.IN_PROGRESS);
         return false;
     }
 
@@ -128,6 +145,7 @@ public class ChessGameImpl implements ChessGame {
     public boolean isInCheckmate(TeamColor teamColor) {
         //check to see if I'm in check
         if (!isInCheck(teamColor)) {
+            setGameStatus(GameStatus.IN_PROGRESS);
             return false;
         }
 
@@ -154,6 +172,13 @@ public class ChessGameImpl implements ChessGame {
             }
         }
 
+        //Set the game status to the opposite team because THIS team is in checkmate
+        if (teamColor.equals(TeamColor.BLACK)) {
+            setGameStatus(GameStatus.WHITE_WON);
+        } else {
+            setGameStatus(GameStatus.BLACK_WON);
+        }
+
         return true;
     }
 
@@ -175,6 +200,7 @@ public class ChessGameImpl implements ChessGame {
             }
         }
 
+        setGameStatus(GameStatus.STALEMATE);
         return true;
     }
 
@@ -245,5 +271,18 @@ public class ChessGameImpl implements ChessGame {
     @Override
     public ChessBoard getBoard() {
         return board;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ChessGameImpl chessGame = (ChessGameImpl) o;
+        return Objects.equals(board, chessGame.board) && turn == chessGame.turn;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(board, turn);
     }
 }

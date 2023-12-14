@@ -1,6 +1,7 @@
 package chess;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -33,7 +34,7 @@ public abstract class ChessPieceImpl implements ChessPiece { //abstract means yo
     public abstract Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition); //For each of the subclasses to implement
     //Each piece will return its corresponding letter(for toString in Board)
 
-    public abstract char getPieceChar();
+    public abstract String getPieceChar();
 
 
     /* Additional helper methods to be inherited */
@@ -228,5 +229,18 @@ public abstract class ChessPieceImpl implements ChessPiece { //abstract means yo
     @Override
     public String toString() {
         return this.pieceType + ":" + this.teamColor;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ChessPieceImpl that = (ChessPieceImpl) o;
+        return teamColor == that.teamColor && pieceType == that.pieceType;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(teamColor, pieceType);
     }
 }

@@ -83,7 +83,7 @@ public class PawnPiece extends ChessPieceImpl {
     }
 
     @Override
-    public char getPieceChar() {
-        return 'p';
+    public String getPieceChar() {
+        return "p";
     }
 }

@@ -13,7 +13,7 @@ public class RookPiece extends ChessPieceImpl {
     }
 
     @Override
-    public char getPieceChar() {
-        return 'r';
+    public String getPieceChar() {
+        return "r";
     }
 }

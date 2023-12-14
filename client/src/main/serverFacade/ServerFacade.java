@@ -30,7 +30,7 @@ public class ServerFacade {
             writeRequestBody(body, connection);
         }
         connection.connect();
-        System.out.printf("= Request =========\n[%s] %s\n\n%s\n\n", method, url, body);
+        //System.out.printf("= Request =========\n[%s] %s\n\n%s\n\n", method, url, body);
         return connection;
     }
 
@@ -163,7 +163,6 @@ public class ServerFacade {
 
         return response;
     }
-
 
     /**
      * This method is only for testing convenience

@@ -1,9 +1,14 @@
 package serverFacadeTests;
 
+import chess.ChessMoveImpl;
+import chess.ChessPositionImpl;
 import com.google.gson.Gson;
 import org.junit.jupiter.api.*;
 import responses.*;
 import serverFacade.ServerFacade;
+import webSocket.ResponseHandler;
+import webSocket.WSClient;
+import webSocketMessages.userCommands.MakeMoveCommand;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -11,7 +16,7 @@ import java.io.IOException;
 
 public class ServerFacadeTests {
 
-    private final String url = "http://localhost:8080/";
+    private final String url = "http://localhost:8080";
 
     @BeforeEach
     public void setup() throws IOException {
@@ -114,12 +119,12 @@ public class ServerFacadeTests {
         CreateGameResponse createGameResponse = ServerFacade.createGameRequest(url, registerResponse.getAuthToken(), "TestGame");
 
         assertNotNull(createGameResponse);
-        assert createGameResponse.getGameID() >= 1000;
+        assertTrue(createGameResponse.getGameID() >= 1000);
     }
 
     @Test
     @Order(9)
-    @DisplayName("Bad Create GAme")
+    @DisplayName("Bad Create Game")
     public void badCreateGame() throws IOException {
         //TODO
         //Try creating a game with missing gameName
@@ -230,7 +235,7 @@ public class ServerFacadeTests {
         assertNull(joinGameResponse2);
 
         //Try an unauthorized Join Game
-        JoinGameResponse joinGameResponse3 = ServerFacade.joinGameRequest(url, "BAD AUTHTOKEN", response.getGameID(), "WHITE");
+        JoinGameResponse joinGameResponse3 = ServerFacade.joinGameRequest(url, "BAD AUTH TOKEN", response.getGameID(), "WHITE");
         assertNull(joinGameResponse3);
     }
 }
