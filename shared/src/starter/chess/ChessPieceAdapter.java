@@ -10,9 +10,7 @@ import java.io.IOException;
 public class ChessPieceAdapter extends TypeAdapter<ChessPiece> {
     @Override
     public void write(JsonWriter jsonWriter, ChessPiece piece) throws IOException {
-        //jsonWriter.value(jsonWriter.toString());
         Gson gson = new Gson();
-        //System.out.println("Im in the ChessPieceAdapter, and I've got a " + piece.getPieceType() + "type");
 
         switch (piece.getPieceType()) {
             case BISHOP -> gson.getAdapter(BishopPiece.class).write(jsonWriter, (BishopPiece) piece);

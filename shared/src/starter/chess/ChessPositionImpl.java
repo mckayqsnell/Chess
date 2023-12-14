@@ -1,5 +1,7 @@
 package chess;
 
+import com.google.gson.GsonBuilder;
+
 import java.util.Objects;
 
 public class ChessPositionImpl implements ChessPosition {
@@ -42,6 +44,11 @@ public class ChessPositionImpl implements ChessPosition {
 
     @Override
     public String toString() {
-        return String.format("(%d,%d)", column, row);
+        GsonBuilder builder = new GsonBuilder();
+        builder.enableComplexMapKeySerialization();
+        builder.registerTypeAdapter(ChessPosition.class, new ChessPositionAdapter());
+
+        /*return String.format("(%d,%d)", column, row); */
+        return builder.create().toJson(this);
     }
 }

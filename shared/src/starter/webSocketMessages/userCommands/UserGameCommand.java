@@ -26,12 +26,22 @@ public class UserGameCommand {
 
     private final String authToken;
 
+    private Integer gameID;
+
     public String getAuthString() {
         return authToken;
     }
 
     public CommandType getCommandType() {
         return this.commandType;
+    }
+
+    public Integer getGameID() {
+        return gameID;
+    }
+
+    public void setGameID(Integer gameID) {
+        this.gameID = gameID;
     }
 
     @Override

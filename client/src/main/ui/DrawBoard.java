@@ -4,7 +4,10 @@ import chess.*;
 
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static ui.EscapeSequences.*;
 
@@ -13,32 +16,35 @@ public class DrawBoard {
     private static final int BOARD_SIZE_IN_SQUARES = 10;
     private static final int ROW_SIZE_IN_SQUARES = 8;
     private static final String EMPTY = "   ";
+    private static Set<ChessPosition> squaresToHighlight = new HashSet<>();
+    private static ChessPosition startPosition;
+    private static ChessGameImpl chessGame;
 
-
-    public static void main(String[] args) {
-        ChessGame game = new ChessGameImpl();
-        drawChessboard(game.getBoard().getBoard(), ChessGame.TeamColor.WHITE);
-        System.out.println(SET_BG_COLOR_BLACK);
-        drawChessboard(game.getBoard().getBoard(), ChessGame.TeamColor.BLACK);
-    }
-
-    public static void drawChessboard(Map<ChessPosition, ChessPiece> board, ChessGame.TeamColor teamColor) {
+    public static void drawChessboard(ChessGameImpl game, ChessGame.TeamColor teamColor,
+                                      ChessPosition highlightPosition) {
+        //If the user entered Highlight Legal Moves
+        if (highlightPosition != null) {
+            startPosition = highlightPosition;
+            setHighLightSquares(game, highlightPosition);
+        }
+        chessGame = game;
 
         var out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
-        out.println();
+        out.println(RESET_BG_COLOR);
 
-        //I messed up and did the perspectives opposite. Doing a shortcut where I do the opposite of what the user is lol.
+        //I messed up and did the perspectives opposite.
+        // Doing a shortcut where I do the opposite of teamColor is to fix it. It works.
 
         if (teamColor.equals(ChessGame.TeamColor.BLACK)) {
             drawHeaders(out, ChessGame.TeamColor.WHITE);
             out.println(RESET_BG_COLOR);
-            drawBoardRows(out, ChessGame.TeamColor.WHITE, board);
+            drawBoardRows(out, ChessGame.TeamColor.WHITE, game.getBoard().getBoard());
             drawHeaders(out, ChessGame.TeamColor.WHITE);
             out.println(RESET_BG_COLOR);
         } else if (teamColor.equals(ChessGame.TeamColor.WHITE)) {
             drawHeaders(out, ChessGame.TeamColor.BLACK);
             out.println(RESET_BG_COLOR);
-            drawBoardRows(out, ChessGame.TeamColor.BLACK, board);
+            drawBoardRows(out, ChessGame.TeamColor.BLACK, game.getBoard().getBoard());
             drawHeaders(out, ChessGame.TeamColor.BLACK);
             out.println(RESET_BG_COLOR);
         }
@@ -69,7 +75,9 @@ public class DrawBoard {
         out.print(EMPTY);
     }
 
-    private static void drawBoardRows(PrintStream out, ChessGame.TeamColor teamColor, Map<ChessPosition, ChessPiece> board) {
+    private static void drawBoardRows(PrintStream out, ChessGame.TeamColor teamColor, Map<ChessPosition,
+            ChessPiece> board) {
+
         if (teamColor.equals(ChessGame.TeamColor.WHITE)) { //BLACK --> row 1 at the top
             for (int i = 1; i <= ROW_SIZE_IN_SQUARES; i++) {
                 drawRow(out, i, ChessGame.TeamColor.BLACK, board);
@@ -102,9 +110,17 @@ public class DrawBoard {
             ChessPosition position = new ChessPositionImpl(colNumber, rowNumber);
             ChessPiece piece = board.get(position);
             if ((colNumber + rowNumber) % 2 == 0) {
-                drawWhiteSquare(out, piece);
+                if (squaresToHighlight.contains(new ChessPositionImpl(colNumber, rowNumber))) {
+                    drawDarkGreenSquare(out, piece);
+                } else {
+                    drawWhiteSquare(out, piece);
+                }
             } else {
-                drawBlackSquare(out, piece);
+                if (squaresToHighlight.contains(new ChessPositionImpl(colNumber, rowNumber))) {
+                    drawLightGreenSquare(out, piece);
+                } else {
+                    drawBlackSquare(out, piece);
+                }
             }
         }
     }
@@ -121,6 +137,37 @@ public class DrawBoard {
 
     private static void drawWhiteSquare(PrintStream out, ChessPiece piece) {
         drawSquareText(out, piece, SET_BG_COLOR_WHITE);
+    }
+
+    private static void drawDarkGreenSquare(PrintStream out, ChessPiece piece) {
+        String bgColor = SET_BG_COLOR_DARK_GREEN;
+        if (piece != null) {
+            if (chessGame.getBoard().getPiecePosition(piece).equals(startPosition)) {
+                bgColor = SET_BG_COLOR_YELLOW;
+            }
+        }
+        drawHighlightText(out, piece, bgColor);
+    }
+
+    private static void drawLightGreenSquare(PrintStream out, ChessPiece piece) {
+        String bgColor = SET_BG_COLOR_GREEN;
+
+        if (piece != null) {
+            if (chessGame.getBoard().getPiecePosition(piece).equals(startPosition)) {
+                bgColor = SET_BG_COLOR_YELLOW;
+            }
+        }
+        drawHighlightText(out, piece, bgColor);
+    }
+
+    private static void drawHighlightText(PrintStream out, ChessPiece piece, String setBgColor) {
+        String squareText = EMPTY;
+        if (piece != null) {
+            squareText = (" " + piece.getPieceChar().toUpperCase() + " ");
+            out.print(SET_TEXT_COLOR_BLACK);
+        }
+        out.print(setBgColor);
+        out.print(squareText);
     }
 
     private static void drawSquareText(PrintStream out, ChessPiece piece, String setBgColor) {
@@ -154,5 +201,23 @@ public class DrawBoard {
         }
 
         return reversedArray;
+    }
+
+    private static void setHighLightSquares(ChessGameImpl game, ChessPosition position) {
+        Collection<ChessMove> validMoves = game.validMoves(position);
+
+        //want to highlight all the endPositions and the start pos itself
+        squaresToHighlight.add(position);
+        for (ChessMove move : validMoves) {
+            squaresToHighlight.add(move.getEndPosition());
+        }
+    }
+
+    public static void setStartPosition(ChessPosition startPosition) {
+        DrawBoard.startPosition = startPosition;
+    }
+
+    public static void setSquaresToHighlight(Set<ChessPosition> squaresToHighlight) {
+        DrawBoard.squaresToHighlight = squaresToHighlight;
     }
 }

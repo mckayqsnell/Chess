@@ -6,7 +6,6 @@ import requests.JoinGameRequest;
 import requests.LoginRequest;
 import requests.RegisterRequest;
 import responses.*;
-import webSocket.WSClient;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +30,7 @@ public class ServerFacade {
             writeRequestBody(body, connection);
         }
         connection.connect();
-        System.out.printf("= Request =========\n[%s] %s\n\n%s\n\n", method, url, body);
+        //System.out.printf("= Request =========\n[%s] %s\n\n%s\n\n", method, url, body);
         return connection;
     }
 
@@ -163,12 +162,6 @@ public class ServerFacade {
         }
 
         return response;
-    }
-
-    public boolean openWebSocket(String urlString, String authToken) throws Exception {
-        var ws = new WSClient(urlString);
-
-        return false;
     }
 
     /**

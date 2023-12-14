@@ -40,7 +40,11 @@ public class ChessMoveImpl implements ChessMove {
 
     @Override
     public String toString() {
-        return String.format("%s -> %s", startPosition.toString(), endPosition.toString());
+        return String.format("(%d, %d) -> (%d, %d)",
+                startPosition.getColumn(),
+                startPosition.getRow(),
+                endPosition.getColumn(),
+                endPosition.getRow());
     }
 
     @Override

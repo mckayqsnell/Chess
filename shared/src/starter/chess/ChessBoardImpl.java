@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class ChessBoardImpl implements ChessBoard {
     //This class stores all the unCaptured pieces in a Game.
@@ -43,7 +44,11 @@ public class ChessBoardImpl implements ChessBoard {
     }
 
     public void setPieceAtPosition(ChessPosition position, ChessPiece piece) {
-        boardMap.put(position, piece);
+        if (piece == null) {
+            boardMap.remove(position);
+        } else {
+            boardMap.put(position, piece);
+        }
     }
 
     public boolean isCaptureMove(ChessMove move) {
@@ -112,5 +117,18 @@ public class ChessBoardImpl implements ChessBoard {
 
         Gson gson = builder.create();
         return gson.toJson(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ChessBoardImpl that = (ChessBoardImpl) o;
+        return Objects.equals(boardMap, that.boardMap);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(boardMap);
     }
 }

@@ -14,8 +14,6 @@ public class ChessPositionAdapter extends TypeAdapter<ChessPosition> {
         GsonBuilder builder = new GsonBuilder();
         builder.registerTypeAdapter(ChessPosition.class, new ChessPositionAdapter());
         builder.enableComplexMapKeySerialization();
-        //System.out.println("In the write method for ChessPosAdapter");
-
         Gson gson = builder.create();
         jsonWriter.value(gson.toJson(position));
     }
@@ -23,7 +21,6 @@ public class ChessPositionAdapter extends TypeAdapter<ChessPosition> {
     @Override
     public ChessPosition read(JsonReader jsonReader) throws IOException {
         String s = jsonReader.nextString();
-        //System.out.println("in.nextString: " + s);
         GsonBuilder builder = new GsonBuilder();
         builder.enableComplexMapKeySerialization();
         builder.registerTypeAdapter(ChessPosition.class, new ChessPositionAdapter());

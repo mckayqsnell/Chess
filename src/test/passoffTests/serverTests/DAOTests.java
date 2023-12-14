@@ -1,6 +1,8 @@
 package passoffTests.serverTests;
 
 
+import chess.*;
+import com.google.gson.Gson;
 import dataAccess.AuthDAO;
 import dataAccess.DataAccessException;
 import dataAccess.GameDAO;
@@ -301,6 +303,66 @@ public class DAOTests {
 
     @Test
     @Order(21)
+    @DisplayName("Normal update game")
+    public void updateGameTest() throws DataAccessException, InvalidMoveException {
+        gameDAO.createGame(new Game(1001, "testGame"));
+
+        //Try updating the game with a mov that is from a white piece position
+        ChessMoveImpl chessMove = new ChessMoveImpl(new ChessPositionImpl(1, 2), new ChessPositionImpl(1, 3));
+        gameDAO.updateGame(1001, chessMove);
+
+        Game actualGame = gameDAO.findGame(1001);
+
+        assertNotNull(actualGame);
+        assertNotNull(actualGame.getGame());
+
+        ChessGameImpl expected = new ChessGameImpl();
+        expected.makeMove(chessMove);
+        System.out.println("Expected");
+        System.out.println(new Gson().toJson(expected));
+
+        ChessGameImpl actual = actualGame.getGame();
+        System.out.println("Actual");
+        System.out.println(new Gson().toJson(actual));
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    @Order(22)
+    @DisplayName("Invalid Move")
+    public void invalidMoveTest() throws DataAccessException {
+        gameDAO.createGame(new Game(1001, "testGame"));
+
+        //Try updating the game with an invalid move
+        ChessMoveImpl chessMove = new ChessMoveImpl(new ChessPositionImpl(1, 7), new ChessPositionImpl(1, 6));
+        assertThrows(InvalidMoveException.class, () -> gameDAO.updateGame(1001, chessMove));
+
+        //Make sure the game is unchanged
+        Game actualGame = gameDAO.findGame(1001);
+        assertNotNull(actualGame);
+        assertNotNull(actualGame.getGame());
+        ChessGameImpl expected = new ChessGameImpl();
+        ChessGameImpl actual = actualGame.getGame();
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    @Order(23)
+    @DisplayName("Normal Update Game Status")
+    public void updateGameStatusTest() throws DataAccessException {
+        gameDAO.createGame(new Game(1001, "testGame"));
+
+        //gameDAO.updateGameStatus(1001, true);
+        ChessGameImpl expected = new ChessGameImpl();
+        //expected.setGameOver(true);
+
+        ChessGameImpl actual = gameDAO.findGame(1001).getGame();
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    @Order(24)
     @DisplayName("Clear all Games")
     public void clearAllGames() throws DataAccessException {
         gameDAO.createGame(new Game(1001, "testGame"));
@@ -312,6 +374,4 @@ public class DAOTests {
 
         assertEquals(expected, actual);
     }
-
-    //TODO: Remove Game and UpdateGame, not required for phase 4
 }

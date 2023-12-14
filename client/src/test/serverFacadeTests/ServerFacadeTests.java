@@ -1,9 +1,14 @@
 package serverFacadeTests;
 
+import chess.ChessMoveImpl;
+import chess.ChessPositionImpl;
 import com.google.gson.Gson;
 import org.junit.jupiter.api.*;
 import responses.*;
 import serverFacade.ServerFacade;
+import webSocket.ResponseHandler;
+import webSocket.WSClient;
+import webSocketMessages.userCommands.MakeMoveCommand;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -11,7 +16,7 @@ import java.io.IOException;
 
 public class ServerFacadeTests {
 
-    private final String url = "http://localhost:8080/";
+    private final String url = "http://localhost:8080";
 
     @BeforeEach
     public void setup() throws IOException {

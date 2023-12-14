@@ -104,10 +104,7 @@ public class GameDAO {
                 String gameName = rs.getString(4);
                 String gameString = rs.getString(5);
 
-                GsonBuilder builder = new GsonBuilder() //FIXME: Separate into a method
-                        .enableComplexMapKeySerialization()
-                        .registerTypeAdapter(ChessBoard.class, new ChessBoardAdapter());
-                Gson gson = builder.create();
+                Gson gson = gsonWithAdapters();
                 ChessGameImpl game = gson.fromJson(gameString, ChessGameImpl.class);
 
                 games.add(new Game(gameID, whiteUsername, blackUsername, gameName, game));
@@ -119,6 +116,14 @@ public class GameDAO {
         }
 
         return games;
+    }
+
+    public Gson gsonWithAdapters() {
+        GsonBuilder builder = new GsonBuilder()
+                .enableComplexMapKeySerialization()
+                .registerTypeAdapter(ChessBoard.class, new ChessBoardAdapter())
+                .setPrettyPrinting();
+        return builder.create();
     }
 
     public void claimSpot(Integer gameID, String username, String team) throws DataAccessException {
@@ -187,59 +192,190 @@ public class GameDAO {
         }
     }
 
-    /* Will be used later */
-    public void updateGame(Integer gameID) throws DataAccessException { //FIXME
-        /*
-        Query the game’s state (JSON string) from the database
-        Deserialize the JSON string to a ChessGame Java object
-        Update the state of the ChessGame object
-        Re-serialize the Chess game to a JSON string
-        Update the game’s JSON string in the database
-        */
-
-        //Query the game’s state (JSON string) from the database
-        //Deserialize the JSON string to a ChessGame Java object
+    public void updateGame(Integer gameID, ChessMoveImpl chessMove) throws DataAccessException, InvalidMoveException {
         var con = database.getConnection();
-        String sql = "select gameID, whiteUsername, blackUsername, gameName, ChessGame from games where gameID = ?";
+        String sql = "select ChessGame from games where gameID = ?";
 
-        Game game = new Game();
         try (PreparedStatement stmt = con.prepareStatement(sql)) {
             stmt.setInt(1, gameID);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    game.setGameID(rs.getInt(1));
-                    game.setWhiteUsername(rs.getString(2));
-                    game.setBlackUsername(rs.getString(3));
-                    game.setGameName(rs.getString(4));
-
-                    String gameString = rs.getString(5);
-                    Gson gson = new Gson();
+                    //Query the game’s state (JSON string) from the database
+                    String gameString = rs.getString(1);
+                    //Deserialize the JSON string to a ChessGame Java object
+                    Gson gson = gsonWithAdapters();
                     ChessGameImpl chessGame = gson.fromJson(gameString, ChessGameImpl.class);
-                    //TODO: Make the move that the user gave you. Then deserialize the game and store in the game object
-                    //TODO: Then update the game
-                    game.setGame(chessGame);
+                    //Update the state of the ChessGame object
+                    //Could throw an invalid Move Exception //
+                    chessGame.makeMove(chessMove); // Will be caught by WebSocketHandler and send an Error
+
+                    //Set the status of the game after the move
+                    setChessGameStatus(chessGame);
+
+                    //Re-serialize the Chess game to a JSON string
+                    String jsonString = chessGameString(chessGame);
+                    System.out.println("Updated gameJsonString");
+                    System.out.println(jsonString);
+                    //Update the game’s JSON string in the database
+
+                    // Use a transaction to ensure consistency
+                    con.setAutoCommit(false);
+                    updateChessGameString(con, gameID, jsonString);
                 }
             }
-
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
+            // Rollback the transaction in case of an exception
+            try {
+                con.rollback();
+            } catch (SQLException rollbackException) {
+                System.out.println("RollBackException caught in gameDao.updateGame");
+                System.out.println(rollbackException.getMessage());
+            }
+
+            throw new DataAccessException("Error updating game: " + gameID + "\n " + e.getMessage());
         } finally {
-            database.closeConnection(con);
+            // Reset auto-commit and close the connection
+            try {
+                if (con != null) {
+                    con.setAutoCommit(true);
+                    database.closeConnection(con);
+                }
+            } catch (SQLException closeException) {
+                System.out.println("CloseException caught in gameDao.updateGame");
+                System.out.println(closeException.getMessage());
+            }
+        }
+    }
+
+    private static void setChessGameStatus(ChessGameImpl chessGame) {
+        //Check if the move resulted in check
+        if (chessGame.isInCheck(ChessGame.TeamColor.WHITE)) {
+            chessGame.setGameStatus(ChessGame.GameStatus.WHITE_IN_CHECK);
+        } else if (chessGame.isInCheck(ChessGame.TeamColor.BLACK)) {
+            chessGame.setGameStatus(ChessGame.GameStatus.BLACK_IN_CHECK);
+        } else {
+            chessGame.setGameStatus(ChessGame.GameStatus.IN_PROGRESS);
         }
 
-        //TODO: Update the game with the specified update (fix parameters) and then put it back into the database
-        //Update the state of the ChessGame object
-        //Re-serialize the Chess game to a JSON string
-        //Update the game’s JSON string in the database
+        //check if checkmated, or stalemate. This overrides all the other status checks above
+        if (chessGame.isInCheckmate(ChessGame.TeamColor.WHITE)) {
+            chessGame.setGameStatus(ChessGame.GameStatus.BLACK_WON);
+        } else if (chessGame.isInCheckmate(ChessGame.TeamColor.BLACK)) {
+            chessGame.setGameStatus(ChessGame.GameStatus.WHITE_WON);
+        } else if (chessGame.isInStalemate(ChessGame.TeamColor.WHITE)
+                || chessGame.isInStalemate(ChessGame.TeamColor.BLACK)) {
+            chessGame.setGameStatus(ChessGame.GameStatus.STALEMATE);
+        }
     }
 
-    private void makeMoveInChessGame() { //TODO: Figure out how to make the move.The user should be giving me a move
+    public void updateGameStatus(Integer gameID, ChessGame.GameStatus gameStatus) throws DataAccessException {
+        var con = database.getConnection();
+        String sql = "select ChessGame from games where gameID = ?";
 
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setInt(1, gameID);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    //Query the game’s state (JSON string) from the database
+                    String gameString = rs.getString(1);
+                    //Deserialize the JSON string to a ChessGame Java object
+                    Gson gson = gsonWithAdapters();
+                    ChessGameImpl chessGame = gson.fromJson(gameString, ChessGameImpl.class);
+                    //Update the gameStatus of the ChessGame object
+                    /* Set the status of the game */
+                    chessGame.setGameStatus(gameStatus);
+
+                    //Re-serialize the Chess game to a JSON string
+                    String jsonString = chessGameString(chessGame);
+                    // Use a transaction to ensure consistency
+                    con.setAutoCommit(false);
+                    //Update the game’s JSON string in the database
+                    updateChessGameString(con, gameID, jsonString);
+                }
+            }
+        } catch (SQLException e) {
+            // Rollback the transaction in case of an exception
+            try {
+                con.rollback();
+            } catch (SQLException rollbackException) {
+                System.out.println("RollBackException caught in gameDao.updateGame");
+                System.out.println(rollbackException.getMessage());
+            }
+
+            throw new DataAccessException("Error updating game: " + gameID + "\n " + e.getMessage());
+        } finally {
+            // Reset auto-commit and close the connection
+            try {
+                if (con != null) {
+                    con.setAutoCommit(true);
+                    database.closeConnection(con);
+                }
+            } catch (SQLException closeException) {
+                System.out.println("CloseException caught in gameDao.updateGame");
+                System.out.println(closeException.getMessage());
+            }
+        }
     }
 
-    /* I'm guessing this will be needed later */
-    public void removeGame(Integer gameID) throws DataAccessException { //TODO
+    public void removeUserFromGame(Integer gameID, ChessGame.TeamColor teamColor) throws DataAccessException {
+        var con = database.getConnection();
+        String sql;
+
+        try {
+            con.setAutoCommit(false); //Start transaction
+
+            if (teamColor.equals(ChessGame.TeamColor.WHITE)) {
+                sql = "UPDATE games SET whiteUsername = NULL WHERE gameID = ?";
+            } else {
+                sql = "UPDATE games SET blackUsername = NULL WHERE gameID = ?";
+            }
+
+            try (PreparedStatement stmt = con.prepareStatement(sql)) {
+                stmt.setInt(1, gameID);
+                stmt.executeUpdate();
+            }
+
+            con.commit(); //Commit transaction
+        } catch (SQLException e) {
+            //Rollback the transaction in case of an exception
+            try {
+                con.rollback();
+            } catch (SQLException rollbackException) {
+                System.out.println("RollBackException caught in gameDao.removeUserFromGame");
+                System.out.println(rollbackException.getMessage());
+            }
+
+            throw new DataAccessException("Error updating game: " + gameID + "\n " + e.getMessage());
+        } finally {
+            //reset auto-commit and close the connection
+            try {
+                if (con != null) {
+                    con.setAutoCommit(true);
+                    database.closeConnection(con);
+                }
+            } catch (SQLException closeException) {
+                System.out.println("CloseException caught in gameDao.removeUserFromGame");
+                System.out.println(closeException.getMessage());
+            }
+        }
+    }
+
+    private void updateChessGameString(Connection con, Integer gameID, String chessGameString) throws DataAccessException {
+        String sql = "UPDATE games SET ChessGame = ? WHERE gameID = ?";
+
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setString(1, chessGameString);
+            stmt.setInt(2, gameID);
+            if (stmt.executeUpdate() == 1) {
+                System.out.printf("Updated game: %d with new ChessGameString%n", gameID);
+            } else {
+                System.out.println("Failed to update ChessGameString in game: " + gameID);
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     public void clearAllGames() throws DataAccessException {
@@ -259,15 +395,9 @@ public class GameDAO {
     private String chessGameString(ChessGameImpl chessGame) {
         GsonBuilder builder = new GsonBuilder()
                 .enableComplexMapKeySerialization()
-                .registerTypeAdapter(ChessBoard.class, new ChessBoardAdapter());
+                .registerTypeAdapter(ChessBoard.class, new ChessBoardAdapter())
+                .setPrettyPrinting();
         Gson gson = builder.create();
-
-        //System.out.println(jsonString);
-
-        //Try making a new ChessGame Object
-        //ChessGameImpl testGame = gson.fromJson(jsonString, ChessGameImpl.class);
-
-        //System.out.println(testGame.getBoard().toString());
 
         return gson.toJson(chessGame);
     }
